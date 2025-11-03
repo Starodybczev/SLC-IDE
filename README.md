@@ -17,7 +17,7 @@
 
 ## 📦 Установка
 ```bash
-git clone https://github.com/<твое_имя>/slc-ide.git
+git clone https://github.com/<твое_имя>/SLC-IDE.git
 cd SLC
 pip install -r requirements.txt
 python main.py
