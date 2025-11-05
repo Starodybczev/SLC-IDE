@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout
 class Main(QMainWindow):
     def __init__(self):
         super().__init__()
-        icon_path = os.path.join(os.path.dirname(__file__), "src", "assets", "icons", "goose_ide.png")
+        icon_path = os.path.join(os.path.dirname(__file__), "src", "assets", "icons", "goose_ide.ico")
         self.setWindowIcon(QIcon(icon_path))
         self.setWindowTitle("SLC IDE 🧩")
         self.resize(1000, 600)
@@ -427,7 +427,7 @@ if __name__ == "__main__":
 
     app = QApplication([])
 
-    icon_path = os.path.join(os.path.dirname(__file__), "src", "assets", "icons", "goose_ide.png")
+    icon_path = os.path.join(os.path.dirname(__file__), "src", "assets", "icons", "goose_ide.ico")
     app.setWindowIcon(QIcon(icon_path))
 
     window = Main()
