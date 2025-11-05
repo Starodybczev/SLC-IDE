@@ -1,12 +1,10 @@
-from PyQt6.QtWidgets import QWidget, QTreeView, QVBoxLayout, QLabel, QApplication  
-from PyQt6.QtGui import QFileSystemModel 
-from PyQt6.QtCore import pyqtSignal, Qt, QDir 
-from PyQt6.QtWidgets import QMenu, QMessageBox
-from PyQt6.QtCore import QPoint
-from PyQt6.QtCore import pyqtSignal
-import shutil, tempfile 
-
+from PyQt6.QtWidgets import QWidget, QTreeView, QVBoxLayout, QLabel, QApplication
+from PyQt6.QtGui import QFileSystemModel, QIcon
+from PyQt6.QtCore import pyqtSignal, Qt, QDir, QPoint
+from PyQt6.QtWidgets import QMenu, QMessageBox, QFileIconProvider  # ← добавь сюда
 import os
+import shutil
+import tempfile
 
 class FileTree(QWidget):
     folderDropped = pyqtSignal(str)
@@ -14,6 +12,8 @@ class FileTree(QWidget):
 
     def __init__(self):
         super().__init__()
+        base = os.path.join(os.path.dirname(__file__), "assets", "icons")
+        self.slc_icon = QIcon(os.path.join(base, "slc_icon.png"))
         self.setObjectName("FileTree")
 
         # ✅ Разрешаем drag'n'drop только на контейнере
@@ -21,6 +21,7 @@ class FileTree(QWidget):
 
         # QFileSystemModel — модель файлов
         self.model = QFileSystemModel(self)
+        self.model.setIconProvider(CustomIconProvider())
         self.model.setReadOnly(False)
         self.model.setFilter(
             QDir.Filter.AllDirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot
@@ -31,13 +32,50 @@ class FileTree(QWidget):
         self.tree.setModel(None)
         self.tree.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.tree.setHeaderHidden(True)
-        self.tree.setAcceptDrops(True)  # 🚫 не перехватывает dnd
+        self.tree.setAcceptDrops(True)
         self.tree.setDragEnabled(True)
         self.tree.setDropIndicatorShown(True)
         self.tree.setDragDropMode(QTreeView.DragDropMode.InternalMove)
         self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.open_context_menu)
         self.tree.doubleClicked.connect(self.on_item_double_click)
+
+        self.tree.setEditTriggers(QTreeView.EditTrigger.NoEditTriggers)
+
+        # 🌙 Фиксируем стиль, чтобы на всех Windows он был одинаковым
+        self.tree.setStyleSheet("""
+            QTreeView {
+                background-color: #1e1f22;
+                color: #f8f8f2;
+                border: none;
+                outline: 0;
+                selection-background-color: #44475a;
+                selection-color: #ffffff;
+            }
+            QTreeView::item:hover {
+                background-color: #333;
+            }
+            QTreeView::item:selected {
+                background-color: #44475a;
+                color: #ffffff;
+            }
+            QScrollBar:vertical {
+                background: #1e1f22;
+                width: 8px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: #555;
+                border-radius: 4px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #777;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+        """)
+
 
         # Label — баннер-заглушка
         self.banner = QLabel("🪶 Перетащи сюда папку проекта")
@@ -200,3 +238,32 @@ class FileTree(QWidget):
         if os.path.isfile(path):
             print(f"📝 Открываю файл: {path}")
             self.fileOpened.emit(path)
+
+
+
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QFileIconProvider
+
+class CustomIconProvider(QFileIconProvider):
+    def __init__(self):
+        super().__init__()
+        base = os.path.join(os.path.dirname(__file__), "assets", "icons")
+        self.slc_icon = QIcon(os.path.join(base, "slc_icon.png"))
+
+    def icon(self, info):
+        from PyQt6.QtWidgets import QFileIconProvider
+
+        # Если Qt передаёт тип (enum)
+        if isinstance(info, QFileIconProvider.IconType):
+            return super().icon(info)
+
+        # Если это папка → стандартная системная
+        try:
+            if info.isDir():
+                return super().icon(QFileIconProvider.IconType.Folder)
+            if info.suffix().lower() == "slc":
+                return self.slc_icon
+        except Exception as e:
+            print(f"⚠️ Ошибка в IconProvider: {e}")
+        return super().icon(info)
+      
